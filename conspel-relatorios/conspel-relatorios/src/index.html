@@ -1,0 +1,2968 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Relatórios - Máquinas Pesadas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md fade-in">
+            <div class="text-center mb-8">
+                <div class="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 8.172V5L8 4z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">Sistema de Relatórios</h1>
+                <p class="text-gray-600">Máquinas Pesadas</p>
+            </div>
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
+                    <input type="text" id="username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Digite seu usuário" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Digite sua senha" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+                    Entrar
+                </button>
+            </form>
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm text-gray-600 text-center">
+                    <strong>Credenciais de teste:</strong><br>
+                    Usuário: administrador<br>
+                    Senha: relatório
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-lg border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-blue-600 w-10 h-10 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 8.172V5L8 4z"></path>
+                            </svg>
+                        </div>
+                        <h1 class="text-xl font-bold text-gray-800">Sistema de Relatórios</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600">Bem-vindo, <span id="currentUser" class="font-medium"></span></span>
+                        <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-200">
+                            Sair
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-8">
+                    <button onclick="showSection('home')" class="nav-btn py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">
+                        Página Inicial
+                    </button>
+                    <button onclick="showSection('reports')" class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                        Relatórios
+                    </button>
+                    <button onclick="showSection('statistics')" class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                        Estatísticas
+                    </button>
+                    <button onclick="showSection('export')" class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                        Exportação
+                    </button>
+                    <button onclick="showSection('calculator')" class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                        Calculadora
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Sections -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Home Section -->
+            <div id="homeSection" class="section fade-in">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Equipment Registration -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6">Cadastro de Equipamentos</h2>
+                        <form id="equipmentForm" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Máquina</label>
+                                <select id="machineType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Selecione o tipo</option>
+                                    <option value="escavadeira">Escavadeira</option>
+                                    <option value="retroescavadeira">Retroescavadeira</option>
+                                    <option value="par-mecanica">Pá Mecânica</option>
+                                    <option value="trator">Trator</option>
+                                    <option value="cacamba">Caçamba</option>
+                                    <option value="motoniveladora">Motoniveladora</option>
+                                    <option value="rolo-compressor">Rolo Compressor</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Número do Equipamento</label>
+                                <input type="text" id="equipmentNumber" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: ESC-001" required>
+                            </div>
+                            <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition duration-200">
+                                Cadastrar Equipamento
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Work Report Form -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6">Relatório de Trabalho</h2>
+                        <form id="workReportForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Data</label>
+                                    <input type="date" id="workDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Equipamento</label>
+                                    <select id="workEquipment" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                        <option value="">Selecione o equipamento</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Fazenda</label>
+                                    <input type="text" id="farm" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Nome da fazenda" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Lote</label>
+                                    <input type="text" id="lot" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Número do lote" required>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Horário Inicial</label>
+                                    <input type="time" id="startTime" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Horário Final</label>
+                                    <input type="time" id="endTime" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Horas de Intervalo</label>
+                                    <input type="number" id="breakHours" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0.0" step="0.1" min="0">
+                                    <p class="text-xs text-gray-500 mt-1">Tempo de paradas/intervalos em horas</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Horas de Retorno</label>
+                                    <input type="number" id="returnHours" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0.0" step="0.1" min="0">
+                                    <p class="text-xs text-gray-500 mt-1">Tempo de deslocamento/retorno em horas</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Horímetro Inicial</label>
+                                    <input type="number" id="initialHourMeter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" step="0.1" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Horímetro Final</label>
+                                    <input type="number" id="finalHourMeter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Operador</label>
+                                    <input type="text" id="operator" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Nome do operador" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Combustível (L)</label>
+                                    <input type="number" id="fuel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" step="0.1" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Serviço</label>
+                                <select id="serviceType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Selecione o serviço</option>
+                                    <optgroup label="Serviços Agrícolas">
+                                        <option value="preparo-solo">Preparo de Solo</option>
+                                        <option value="plantio">Plantio</option>
+                                        <option value="colheita">Colheita</option>
+                                        <option value="pulverizacao">Pulverização</option>
+                                        <option value="adubacao">Adubação</option>
+                                        <option value="irrigacao">Irrigação</option>
+                                        <option value="cultivo">Cultivo</option>
+                                    </optgroup>
+                                    <optgroup label="Usinas e Indústrias">
+                                        <option value="carregamento-cana">Carregamento de Cana</option>
+                                        <option value="transporte-cana">Transporte de Cana</option>
+                                        <option value="limpeza-canavial">Limpeza de Canavial</option>
+                                        <option value="abertura-carreadores">Abertura de Carreadores</option>
+                                        <option value="manutencao-estradas">Manutenção de Estradas</option>
+                                        <option value="movimentacao-terra">Movimentação de Terra</option>
+                                        <option value="nivelamento">Nivelamento</option>
+                                        <option value="compactacao">Compactação</option>
+                                        <option value="dragagem">Dragagem</option>
+                                    </optgroup>
+                                    <optgroup label="Construção Civil">
+                                        <option value="escavacao">Escavação</option>
+                                        <option value="aterro">Aterro</option>
+                                        <option value="demolição">Demolição</option>
+                                        <option value="fundacao">Fundação</option>
+                                        <option value="pavimentacao">Pavimentação</option>
+                                        <option value="drenagem">Drenagem</option>
+                                        <option value="terraplanagem">Terraplanagem</option>
+                                    </optgroup>
+                                    <optgroup label="Mineração">
+                                        <option value="extracao">Extração</option>
+                                        <option value="britagem">Britagem</option>
+                                        <option value="peneiramento">Peneiramento</option>
+                                        <option value="transporte-minerio">Transporte de Minério</option>
+                                        <option value="beneficiamento">Beneficiamento</option>
+                                    </optgroup>
+                                    <optgroup label="Serviços Gerais">
+                                        <option value="transporte">Transporte</option>
+                                        <option value="carregamento">Carregamento</option>
+                                        <option value="descarregamento">Descarregamento</option>
+                                        <option value="limpeza">Limpeza de Área</option>
+                                        <option value="manutencao">Manutenção</option>
+                                        <option value="reparos">Reparos</option>
+                                        <option value="instalacao">Instalação</option>
+                                        <option value="desmontagem">Desmontagem</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                <select id="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="concluido">Concluído</option>
+                                    <option value="em-andamento">Em Andamento</option>
+                                    <option value="pausado">Pausado</option>
+                                    <option value="cancelado">Cancelado</option>
+                                    <option value="aguardando">Aguardando Início</option>
+                                    <option value="manutencao">Em Manutenção</option>
+                                    <option value="quebrado">Quebrado/Avariado</option>
+                                    <option value="abastecimento">Abastecimento</option>
+                                    <option value="troca-turno">Troca de Turno</option>
+                                    <option value="almoco">Parada para Almoço</option>
+                                    <option value="chuva">Parado por Chuva</option>
+                                    <option value="falta-operador">Falta de Operador</option>
+                                    <option value="falta-combustivel">Falta de Combustível</option>
+                                    <option value="aguardando-material">Aguardando Material</option>
+                                    <option value="aguardando-liberacao">Aguardando Liberação</option>
+                                    <option value="transporte">Em Transporte</option>
+                                    <option value="standby">Stand-by</option>
+                                    <option value="inativo">Inativo</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Observações</label>
+                                <textarea id="observations" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Observações adicionais"></textarea>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <div class="text-sm text-blue-800" id="calculatedHours">
+                                    <strong>Total de Horas:</strong> 0.0h<br>
+                                    <strong>Horas Produtivas:</strong> 0.0h
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+                                Salvar Relatório
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Active Equipment List -->
+                <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">Equipamentos Ativos</h2>
+                    <div id="activeEquipmentList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Equipment cards will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reportsSection" class="section hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">Relatórios Salvos</h2>
+                        <div class="flex space-x-4">
+                            <select id="equipmentFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todos os Equipamentos</option>
+                            </select>
+                            <select id="operatorFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todos os Operadores</option>
+                            </select>
+                            <button onclick="applyFilters()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+                                Filtrar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full table-auto">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipamento</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operador</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">H. Inicial</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">H. Intervalo</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">H. Retorno</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">H. Final</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Horas</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horímetro Ini.</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horímetro Fin.</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">H. Produtivo</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Combustível</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Reports will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Section -->
+            <div id="statisticsSection" class="section hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center">
+                            <div class="bg-blue-500 rounded-lg p-3">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Total de Relatórios</p>
+                                <p id="totalReports" class="text-2xl font-bold text-gray-900">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center">
+                            <div class="bg-green-500 rounded-lg p-3">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Máquinas Ativas</p>
+                                <p id="activeMachines" class="text-2xl font-bold text-gray-900">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center">
+                            <div class="bg-yellow-500 rounded-lg p-3">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Total de Horas</p>
+                                <p id="totalHours" class="text-2xl font-bold text-gray-900">0.0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex items-center">
+                            <div class="bg-red-500 rounded-lg p-3">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Combustível Total</p>
+                                <p id="totalFuel" class="text-2xl font-bold text-gray-900">0.0L</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Horas por Equipamento</h3>
+                        <div id="equipmentHoursChart" class="space-y-3">
+                            <!-- Chart will be populated here -->
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Horas por Operador</h3>
+                        <div id="operatorHoursChart" class="space-y-3">
+                            <!-- Chart will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div id="exportSection" class="section hidden">
+                <!-- Export Filters -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">Filtros para Exportação</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Data Inicial</label>
+                            <input type="date" id="exportStartDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Data Final</label>
+                            <input type="date" id="exportEndDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Equipamento</label>
+                            <select id="exportEquipmentFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todos os Equipamentos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Operador</label>
+                            <select id="exportOperatorFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todos os Operadores</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-center">
+                        <button onclick="previewExportData()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+                            Visualizar Dados Filtrados
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div id="exportPreview" class="bg-white rounded-xl shadow-lg p-6 mb-6 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Prévia dos Dados</h3>
+                        <span id="previewCount" class="text-sm text-gray-600"></span>
+                    </div>
+                    <div class="overflow-x-auto max-h-96">
+                        <table class="w-full table-auto text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Equipamento</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Operador</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Entrada</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Saída</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Horas</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fazenda</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Lote</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Serviço</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Combustível</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Horímetro Inicial</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Horímetro Final</th>
+                                </tr>
+                            </thead>
+                            <tbody id="exportPreviewBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Preview data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Export Options -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="border border-gray-200 rounded-lg p-6 text-center">
+                        <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">Planilha Detalhada</h3>
+                        <p class="text-sm text-gray-600 mb-4">Exporta planilha completa com todos os dados filtrados</p>
+                        <button onclick="exportDetailedSpreadsheet()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+                            Exportar PDF
+                        </button>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-6 text-center">
+                        <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">Controle de Ponto</h3>
+                        <p class="text-sm text-gray-600 mb-4">Relatório focado em horários de entrada e saída</p>
+                        <button onclick="exportTimeControl()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
+                            Exportar PDF
+                        </button>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-6 text-center">
+                        <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">Resumo Executivo</h3>
+                        <p class="text-sm text-gray-600 mb-4">Relatório resumido com totalizadores e estatísticas</p>
+                        <button onclick="exportExecutiveSummary()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition duration-200">
+                            Exportar PDF
+                        </button>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-6 text-center">
+                        <div class="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">Consumo Combustível</h3>
+                        <p class="text-sm text-gray-600 mb-4">Relatório detalhado de consumo por equipamento</p>
+                        <button onclick="exportFuelConsumption()" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition duration-200">
+                            Exportar PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Statistics -->
+                <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Resumo dos Dados Filtrados</h3>
+                    <div id="exportSummary" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center p-4 bg-blue-50 rounded-lg">
+                            <p class="text-sm text-blue-600 font-medium">Total de Registros</p>
+                            <p id="summaryTotalRecords" class="text-2xl font-bold text-blue-800">-</p>
+                        </div>
+                        <div class="text-center p-4 bg-green-50 rounded-lg">
+                            <p class="text-sm text-green-600 font-medium">Total de Horas</p>
+                            <p id="summaryTotalHours" class="text-2xl font-bold text-green-800">-</p>
+                        </div>
+                        <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                            <p class="text-sm text-yellow-600 font-medium">Total Combustível</p>
+                            <p id="summaryTotalFuel" class="text-2xl font-bold text-yellow-800">-</p>
+                        </div>
+                        <div class="text-center p-4 bg-purple-50 rounded-lg">
+                            <p class="text-sm text-purple-600 font-medium">Operadores Únicos</p>
+                            <p id="summaryUniqueOperators" class="text-2xl font-bold text-purple-800">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculator Section -->
+            <div id="calculatorSection" class="section hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6">Calculadora de Produtividade</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Período de Análise</label>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="date" id="calcStartDate" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <input type="date" id="calcEndDate" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por</label>
+                                <select id="calcFilterType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">Todos</option>
+                                    <option value="equipment">Por Equipamento</option>
+                                    <option value="operator">Por Operador</option>
+                                </select>
+                            </div>
+                            <div id="calcFilterValue" class="hidden">
+                                <select id="calcFilterSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Selecione...</option>
+                                </select>
+                            </div>
+                            <button onclick="calculateProductivity()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+                                Calcular Produtividade
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Resultados</h3>
+                        <div id="productivityResults" class="space-y-4">
+                            <p class="text-gray-600">Selecione um período e clique em "Calcular Produtividade" para ver os resultados.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = '';
+        let equipment = JSON.parse(localStorage.getItem('equipment') || '[]');
+        let reports = JSON.parse(localStorage.getItem('reports') || '[]');
+        let currentSection = 'home';
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
+            document.getElementById('workDate').valueAsDate = new Date();
+            
+            // Calculate hours automatically
+            document.getElementById('startTime').addEventListener('change', calculateHours);
+            document.getElementById('endTime').addEventListener('change', calculateHours);
+            document.getElementById('breakHours').addEventListener('input', calculateHours);
+            document.getElementById('returnHours').addEventListener('input', calculateHours);
+            
+            // Filter type change handler
+            document.getElementById('calcFilterType').addEventListener('change', function() {
+                const filterValue = document.getElementById('calcFilterValue');
+                const filterSelect = document.getElementById('calcFilterSelect');
+                
+                if (this.value === 'all') {
+                    filterValue.classList.add('hidden');
+                } else {
+                    filterValue.classList.remove('hidden');
+                    populateFilterSelect(this.value);
+                }
+            });
+        });
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === 'administrador' && password === 'relatório') {
+                currentUser = username;
+                document.getElementById('currentUser').textContent = username;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                loadData();
+            } else {
+                alert('Usuário ou senha incorretos!');
+            }
+        });
+
+        // Logout functionality
+        function logout() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            currentUser = '';
+        }
+
+        // Navigation
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            
+            // Show selected section
+            document.getElementById(section + 'Section').classList.remove('hidden');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-500', 'text-blue-600');
+            
+            currentSection = section;
+            
+            // Load section-specific data
+            if (section === 'statistics') {
+                updateStatistics();
+            } else if (section === 'reports') {
+                loadReports();
+            }
+        }
+
+        // Equipment registration
+        document.getElementById('equipmentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const machineType = document.getElementById('machineType').value;
+            const equipmentNumber = document.getElementById('equipmentNumber').value;
+            
+            // Check if equipment already exists
+            if (equipment.find(eq => eq.number === equipmentNumber)) {
+                alert('Este número de equipamento já está cadastrado!');
+                return;
+            }
+            
+            const newEquipment = {
+                id: Date.now(),
+                type: machineType,
+                number: equipmentNumber,
+                active: true,
+                createdAt: new Date().toISOString()
+            };
+            
+            equipment.push(newEquipment);
+            localStorage.setItem('equipment', JSON.stringify(equipment));
+            
+            // Reset form
+            this.reset();
+            
+            // Update displays
+            updateEquipmentSelects();
+            displayActiveEquipment();
+            
+            alert('Equipamento cadastrado com sucesso!');
+        });
+
+        // Work report form
+        document.getElementById('workReportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const reportData = {
+                id: Date.now(),
+                date: document.getElementById('workDate').value,
+                equipment: document.getElementById('workEquipment').value,
+                farm: document.getElementById('farm').value,
+                lot: document.getElementById('lot').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                breakHours: parseFloat(document.getElementById('breakHours').value) || 0,
+                returnHours: parseFloat(document.getElementById('returnHours').value) || 0,
+                initialHourMeter: parseFloat(document.getElementById('initialHourMeter').value),
+                finalHourMeter: parseFloat(document.getElementById('finalHourMeter').value),
+                operator: document.getElementById('operator').value,
+                fuel: parseFloat(document.getElementById('fuel').value),
+                serviceType: document.getElementById('serviceType').value,
+                status: document.getElementById('status').value,
+                observations: document.getElementById('observations').value,
+                workedHours: calculateWorkedHours(),
+                createdAt: new Date().toISOString()
+            };
+            
+            reports.push(reportData);
+            localStorage.setItem('reports', JSON.stringify(reports));
+            
+            // Reset form
+            this.reset();
+            document.getElementById('calculatedHours').innerHTML = `
+                <strong>Total de Horas:</strong> 0.0h<br>
+                <strong>Horas Produtivas:</strong> 0.0h
+            `;
+            document.getElementById('workDate').valueAsDate = new Date();
+            
+            alert('Relatório salvo com sucesso!');
+        });
+
+        // Calculate worked hours
+        function calculateHours() {
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const breakHours = parseFloat(document.getElementById('breakHours').value) || 0;
+            const returnHours = parseFloat(document.getElementById('returnHours').value) || 0;
+            
+            if (startTime && endTime) {
+                const basePeriod = calculateBasePeriod();
+                const totalWorkedHours = basePeriod + breakHours + returnHours;
+                
+                document.getElementById('calculatedHours').innerHTML = `
+                    <strong>H. Inicial:</strong> ${basePeriod.toFixed(1)}h<br>
+                    <strong>+ H. Intervalo:</strong> ${breakHours.toFixed(1)}h<br>
+                    <strong>+ H. Retorno:</strong> ${returnHours.toFixed(1)}h<br>
+                    <strong>= Total Trabalhado:</strong> ${totalWorkedHours.toFixed(1)}h
+                `;
+            } else {
+                document.getElementById('calculatedHours').innerHTML = `
+                    <strong>H. Inicial:</strong> 0.0h<br>
+                    <strong>+ H. Intervalo:</strong> 0.0h<br>
+                    <strong>+ H. Retorno:</strong> 0.0h<br>
+                    <strong>= Total Trabalhado:</strong> 0.0h
+                `;
+            }
+        }
+
+        function calculateBasePeriod() {
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            
+            if (!startTime || !endTime) return 0;
+            
+            const start = new Date(`2000-01-01T${startTime}`);
+            const end = new Date(`2000-01-01T${endTime}`);
+            
+            if (end < start) {
+                end.setDate(end.getDate() + 1); // Next day
+            }
+            
+            return (end - start) / (1000 * 60 * 60); // Convert to hours
+        }
+
+        function calculateWorkedHours() {
+            const basePeriod = calculateBasePeriod();
+            const breakHours = parseFloat(document.getElementById('breakHours').value) || 0;
+            const returnHours = parseFloat(document.getElementById('returnHours').value) || 0;
+            
+            return basePeriod + breakHours + returnHours;
+        }
+
+        // Load and display data
+        function loadData() {
+            updateEquipmentSelects();
+            displayActiveEquipment();
+            loadReports();
+            updateStatistics();
+            populateFilters();
+            populateExportFilters();
+        }
+
+        function updateEquipmentSelects() {
+            const workEquipmentSelect = document.getElementById('workEquipment');
+            const equipmentFilter = document.getElementById('equipmentFilter');
+            
+            // Clear existing options (except first)
+            workEquipmentSelect.innerHTML = '<option value="">Selecione o equipamento</option>';
+            equipmentFilter.innerHTML = '<option value="">Todos os Equipamentos</option>';
+            
+            equipment.forEach(eq => {
+                const option1 = new Option(`${eq.number} - ${eq.type}`, eq.number);
+                const option2 = new Option(`${eq.number} - ${eq.type}`, eq.number);
+                workEquipmentSelect.add(option1);
+                equipmentFilter.add(option2);
+            });
+        }
+
+        function displayActiveEquipment() {
+            const container = document.getElementById('activeEquipmentList');
+            
+            if (equipment.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 col-span-full text-center">Nenhum equipamento cadastrado.</p>';
+                return;
+            }
+            
+            container.innerHTML = equipment.map(eq => `
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h3 class="font-medium text-gray-800">${eq.number}</h3>
+                            <p class="text-sm text-gray-600 capitalize">${eq.type.replace('-', ' ')}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Ativo</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editEquipment(${eq.id})" class="flex-1 bg-blue-500 text-white text-xs px-3 py-2 rounded-lg hover:bg-blue-600 transition duration-200">
+                            Editar
+                        </button>
+                        <button onclick="deleteEquipment(${eq.id})" class="flex-1 bg-red-500 text-white text-xs px-3 py-2 rounded-lg hover:bg-red-600 transition duration-200">
+                            Excluir
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadReports() {
+            const tbody = document.getElementById('reportsTableBody');
+            
+            if (reports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="14" class="px-4 py-8 text-center text-gray-600">Nenhum relatório encontrado.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = reports.map(report => {
+                // Calcular horas base (período entre entrada e saída)
+                const basePeriod = calculateReportBasePeriod(report.startTime, report.endTime);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(report.date)}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.equipment}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.operator}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.startTime}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${(report.breakHours || 0).toFixed(1)}h</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${(report.returnHours || 0).toFixed(1)}h</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.endTime}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900 font-medium text-blue-600">${report.workedHours.toFixed(1)}h</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.initialHourMeter}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.finalHourMeter}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${basePeriod.toFixed(1)}h</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.fuel}L</td>
+                    <td class="px-3 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(report.status)}">${report.status}</span>
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="viewReport(${report.id})" class="text-blue-600 hover:text-blue-900 mr-2">Ver</button>
+                        <button onclick="editReportStatus(${report.id})" class="text-green-600 hover:text-green-900 mr-2">Editar</button>
+                        <button onclick="deleteReport(${report.id})" class="text-red-600 hover:text-red-900">Excluir</button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function populateFilters() {
+            const operatorFilter = document.getElementById('operatorFilter');
+            const operators = [...new Set(reports.map(r => r.operator))];
+            
+            operatorFilter.innerHTML = '<option value="">Todos os Operadores</option>';
+            operators.forEach(op => {
+                operatorFilter.add(new Option(op, op));
+            });
+        }
+
+        function applyFilters() {
+            const equipmentFilter = document.getElementById('equipmentFilter').value;
+            const operatorFilter = document.getElementById('operatorFilter').value;
+            
+            let filteredReports = reports;
+            
+            if (equipmentFilter) {
+                filteredReports = filteredReports.filter(r => r.equipment === equipmentFilter);
+            }
+            
+            if (operatorFilter) {
+                filteredReports = filteredReports.filter(r => r.operator === operatorFilter);
+            }
+            
+            const tbody = document.getElementById('reportsTableBody');
+            
+            if (filteredReports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="14" class="px-4 py-8 text-center text-gray-600">Nenhum relatório encontrado com os filtros aplicados.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filteredReports.map(report => {
+                // Calcular horas base (período entre entrada e saída)
+                const basePeriod = calculateReportBasePeriod(report.startTime, report.endTime);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(report.date)}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.equipment}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.operator}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.startTime}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${(report.breakHours || 0).toFixed(1)}h</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${(report.returnHours || 0).toFixed(1)}h</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.endTime}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900 font-medium text-blue-600">${report.workedHours.toFixed(1)}h</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.initialHourMeter}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.finalHourMeter}</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${basePeriod.toFixed(1)}h</td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900">${report.fuel}L</td>
+                    <td class="px-3 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(report.status)}">${report.status}</span>
+                    </td>
+                    <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="viewReport(${report.id})" class="text-blue-600 hover:text-blue-900 mr-2">Ver</button>
+                        <button onclick="editReportStatus(${report.id})" class="text-green-600 hover:text-green-900 mr-2">Editar</button>
+                        <button onclick="deleteReport(${report.id})" class="text-red-600 hover:text-red-900">Excluir</button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function updateStatistics() {
+            document.getElementById('totalReports').textContent = reports.length;
+            document.getElementById('activeMachines').textContent = equipment.length;
+            
+            const totalHours = reports.reduce((sum, r) => sum + r.workedHours, 0);
+            document.getElementById('totalHours').textContent = totalHours.toFixed(1);
+            
+            const totalFuel = reports.reduce((sum, r) => sum + r.fuel, 0);
+            document.getElementById('totalFuel').textContent = totalFuel.toFixed(1) + 'L';
+            
+            // Equipment hours chart
+            const equipmentHours = {};
+            reports.forEach(r => {
+                equipmentHours[r.equipment] = (equipmentHours[r.equipment] || 0) + r.workedHours;
+            });
+            
+            const equipmentChart = document.getElementById('equipmentHoursChart');
+            equipmentChart.innerHTML = Object.entries(equipmentHours).map(([eq, hours]) => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">${eq}</span>
+                    <div class="flex items-center space-x-2">
+                        <div class="bg-blue-200 rounded-full h-2 w-24">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(100, (hours / Math.max(...Object.values(equipmentHours))) * 100)}%"></div>
+                        </div>
+                        <span class="text-sm text-gray-600">${hours.toFixed(1)}h</span>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-gray-600">Nenhum dado disponível</p>';
+            
+            // Operator hours chart
+            const operatorHours = {};
+            reports.forEach(r => {
+                operatorHours[r.operator] = (operatorHours[r.operator] || 0) + r.workedHours;
+            });
+            
+            const operatorChart = document.getElementById('operatorHoursChart');
+            operatorChart.innerHTML = Object.entries(operatorHours).map(([op, hours]) => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">${op}</span>
+                    <div class="flex items-center space-x-2">
+                        <div class="bg-green-200 rounded-full h-2 w-24">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: ${Math.min(100, (hours / Math.max(...Object.values(operatorHours))) * 100)}%"></div>
+                        </div>
+                        <span class="text-sm text-gray-600">${hours.toFixed(1)}h</span>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-gray-600">Nenhum dado disponível</p>';
+        }
+
+        // Export filter functions
+        function populateExportFilters() {
+            const exportEquipmentFilter = document.getElementById('exportEquipmentFilter');
+            const exportOperatorFilter = document.getElementById('exportOperatorFilter');
+            
+            // Clear existing options (except first)
+            exportEquipmentFilter.innerHTML = '<option value="">Todos os Equipamentos</option>';
+            exportOperatorFilter.innerHTML = '<option value="">Todos os Operadores</option>';
+            
+            // Populate equipment filter
+            equipment.forEach(eq => {
+                const option = new Option(`${eq.number} - ${eq.type}`, eq.number);
+                exportEquipmentFilter.add(option);
+            });
+            
+            // Populate operator filter
+            const operators = [...new Set(reports.map(r => r.operator))];
+            operators.forEach(op => {
+                exportOperatorFilter.add(new Option(op, op));
+            });
+        }
+
+        function getFilteredReports() {
+            const startDate = document.getElementById('exportStartDate').value;
+            const endDate = document.getElementById('exportEndDate').value;
+            const equipmentFilter = document.getElementById('exportEquipmentFilter').value;
+            const operatorFilter = document.getElementById('exportOperatorFilter').value;
+            
+            let filteredReports = reports;
+            
+            if (startDate) {
+                filteredReports = filteredReports.filter(r => r.date >= startDate);
+            }
+            
+            if (endDate) {
+                filteredReports = filteredReports.filter(r => r.date <= endDate);
+            }
+            
+            if (equipmentFilter) {
+                filteredReports = filteredReports.filter(r => r.equipment === equipmentFilter);
+            }
+            
+            if (operatorFilter) {
+                filteredReports = filteredReports.filter(r => r.operator === operatorFilter);
+            }
+            
+            return filteredReports.sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+
+        function previewExportData() {
+            const filteredReports = getFilteredReports();
+            const previewSection = document.getElementById('exportPreview');
+            const previewBody = document.getElementById('exportPreviewBody');
+            const previewCount = document.getElementById('previewCount');
+            
+            if (filteredReports.length === 0) {
+                previewBody.innerHTML = '<tr><td colspan="13" class="px-3 py-4 text-center text-gray-600">Nenhum relatório encontrado com os filtros aplicados.</td></tr>';
+                previewCount.textContent = '0 registros encontrados';
+            } else {
+                previewBody.innerHTML = filteredReports.map(report => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2 text-xs text-gray-900">${formatDate(report.date)}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.equipment}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.operator}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.startTime}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.endTime}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.workedHours.toFixed(1)}h</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.farm}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.lot}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${getServiceTypeName(report.serviceType)}</td>
+                        <td class="px-3 py-2 text-xs"><span class="px-2 py-1 text-xs rounded-full ${getStatusColor(report.status)}">${getStatusName(report.status)}</span></td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.fuel}L</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.initialHourMeter}</td>
+                        <td class="px-3 py-2 text-xs text-gray-900">${report.finalHourMeter}</td>
+                    </tr>
+                `).join('');
+                previewCount.textContent = `${filteredReports.length} registros encontrados`;
+            }
+            
+            previewSection.classList.remove('hidden');
+            updateExportSummary(filteredReports);
+        }
+
+        function updateExportSummary(filteredReports) {
+            const totalRecords = filteredReports.length;
+            const totalHours = filteredReports.reduce((sum, r) => sum + r.workedHours, 0);
+            const totalFuel = filteredReports.reduce((sum, r) => sum + r.fuel, 0);
+            const uniqueOperators = [...new Set(filteredReports.map(r => r.operator))].length;
+            
+            document.getElementById('summaryTotalRecords').textContent = totalRecords;
+            document.getElementById('summaryTotalHours').textContent = totalHours.toFixed(1) + 'h';
+            document.getElementById('summaryTotalFuel').textContent = totalFuel.toFixed(1) + 'L';
+            document.getElementById('summaryUniqueOperators').textContent = uniqueOperators;
+        }
+
+        // Export functions
+        function exportDetailedSpreadsheet() {
+            const filteredReports = getFilteredReports();
+            
+            if (filteredReports.length === 0) {
+                alert('Nenhum relatório para exportar! Use os filtros para selecionar dados.');
+                return;
+            }
+            
+            // Verificar se a biblioteca jsPDF está carregada
+            let jsPDF;
+            try {
+                if (window.jspdf && window.jspdf.jsPDF) {
+                    jsPDF = window.jspdf.jsPDF;
+                } else if (window.jsPDF) {
+                    jsPDF = window.jsPDF;
+                } else {
+                    throw new Error('jsPDF não encontrado');
+                }
+            } catch (error) {
+                alert('Erro: Biblioteca PDF não carregada corretamente. Recarregue a página e tente novamente.');
+                console.error('Erro jsPDF:', error);
+                return;
+            }
+            
+            let doc;
+            try {
+                doc = new jsPDF('landscape', 'mm', 'a4');
+            } catch (error) {
+                alert('Erro ao criar documento PDF. Verifique se a página foi carregada completamente.');
+                console.error('Erro ao criar PDF:', error);
+                return;
+            }
+            
+            // Gradient-like header with multiple layers
+            doc.setFillColor(25, 118, 210); // Deep blue
+            doc.rect(0, 0, 297, 35, 'F');
+            doc.setFillColor(33, 150, 243); // Lighter blue overlay
+            doc.rect(0, 0, 297, 25, 'F');
+            
+            // Company logo area (simulated)
+            doc.setFillColor(255, 255, 255);
+            doc.rect(10, 5, 40, 15, 'F');
+            doc.setTextColor(25, 118, 210);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text('LOGO', 28, 14);
+            
+            // Main title with shadow effect
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont(undefined, 'bold');
+            const title = 'PLANILHA DETALHADA DE RELATÓRIOS';
+            const titleWidth = doc.getTextWidth(title);
+            doc.text(title, (297 - titleWidth) / 2, 18);
+            
+            // Subtitle
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'normal');
+            const subtitle = 'Sistema Integrado de Controle - Máquinas Pesadas';
+            const subtitleWidth = doc.getTextWidth(subtitle);
+            doc.text(subtitle, (297 - subtitleWidth) / 2, 24);
+            
+            // Period and generation info with enhanced styling
+            const startDate = document.getElementById('exportStartDate').value;
+            const endDate = document.getElementById('exportEndDate').value;
+            const currentDate = new Date().toLocaleDateString('pt-BR');
+            const currentTime = new Date().toLocaleTimeString('pt-BR');
+            
+            // Info box
+            doc.setFillColor(240, 248, 255);
+            doc.rect(8, 30, 280, 18, 'F');
+            doc.setDrawColor(25, 118, 210);
+            doc.setLineWidth(0.5);
+            doc.rect(8, 30, 280, 18, 'D');
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            
+            let periodText = 'PERÍODO DE ANÁLISE: ';
+            if (startDate && endDate) {
+                periodText += `${formatDate(startDate)} até ${formatDate(endDate)}`;
+            } else if (startDate) {
+                periodText += `A partir de ${formatDate(startDate)}`;
+            } else if (endDate) {
+                periodText += `Até ${formatDate(endDate)}`;
+            } else {
+                periodText += 'TODOS OS REGISTROS DISPONÍVEIS';
+            }
+            
+            doc.text(periodText, 12, 36);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Relatório gerado em: ${currentDate} às ${currentTime} | Total de registros: ${filteredReports.length}`, 12, 42);
+            
+            // Enhanced table with more comprehensive data
+            const headers = [
+                'Data', 'Equipamento', 'Operador', 'Fazenda/Local', 'Lote', 'Entrada', 'Saída', 
+                'H.Intervalo', 'H.Retorno', 'Total H.', 'H.Produtivo', 'Horímetro Ini.', 
+                'Horímetro Fin.', 'Diferença HM', 'Combustível', 'Eficiência', 'Tipo Serviço', 
+                'Status', 'Observações'
+            ];
+            
+            const colWidths = [14, 25, 22, 22, 12, 12, 12, 12, 12, 12, 12, 14, 14, 12, 12, 12, 30, 20, 35];
+            
+            let yPos = 55;
+            let xPos = 5;
+            
+            // Enhanced header row with gradient effect
+            doc.setFillColor(25, 118, 210);
+            doc.rect(5, yPos, 287, 12, 'F');
+            doc.setFillColor(33, 150, 243);
+            doc.rect(5, yPos, 287, 8, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(7);
+            
+            headers.forEach((header, i) => {
+                // Center text in column
+                const textWidth = doc.getTextWidth(header);
+                const textX = xPos + (colWidths[i] - textWidth) / 2;
+                doc.text(header, textX, yPos + 6);
+                
+                // Add column separators
+                if (i < headers.length - 1) {
+                    doc.setDrawColor(255, 255, 255);
+                    doc.setLineWidth(0.2);
+                    doc.line(xPos + colWidths[i], yPos, xPos + colWidths[i], yPos + 12);
+                }
+                
+                xPos += colWidths[i];
+            });
+            
+            yPos += 12;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(6);
+            
+            // Enhanced data rows with better formatting
+            filteredReports.forEach((report, index) => {
+                if (yPos > 185) {
+                    doc.addPage('landscape');
+                    yPos = 20;
+                    
+                    // Redraw enhanced headers on new page
+                    xPos = 5;
+                    doc.setFillColor(25, 118, 210);
+                    doc.rect(5, yPos, 287, 12, 'F');
+                    doc.setFillColor(33, 150, 243);
+                    doc.rect(5, yPos, 287, 8, 'F');
+                    
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont(undefined, 'bold');
+                    doc.setFontSize(7);
+                    
+                    headers.forEach((header, i) => {
+                        const textWidth = doc.getTextWidth(header);
+                        const textX = xPos + (colWidths[i] - textWidth) / 2;
+                        doc.text(header, textX, yPos + 6);
+                        
+                        if (i < headers.length - 1) {
+                            doc.setDrawColor(255, 255, 255);
+                            doc.setLineWidth(0.2);
+                            doc.line(xPos + colWidths[i], yPos, xPos + colWidths[i], yPos + 12);
+                        }
+                        
+                        xPos += colWidths[i];
+                    });
+                    
+                    yPos += 12;
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFont(undefined, 'normal');
+                    doc.setFontSize(6);
+                }
+                
+                // Enhanced alternating row colors with status-based highlighting
+                if (index % 2 === 0) {
+                    doc.setFillColor(248, 250, 252);
+                } else {
+                    doc.setFillColor(255, 255, 255);
+                }
+                
+                // Special highlighting for important statuses
+                if (report.status === 'quebrado' || report.status === 'manutencao') {
+                    doc.setFillColor(254, 242, 242); // Light red for issues
+                } else if (report.status === 'concluido') {
+                    doc.setFillColor(240, 253, 244); // Light green for completed
+                }
+                
+                doc.rect(5, yPos, 287, 7, 'F');
+                
+                // Add subtle row borders
+                doc.setDrawColor(226, 232, 240);
+                doc.setLineWidth(0.1);
+                doc.rect(5, yPos, 287, 7, 'D');
+                
+                xPos = 5;
+                const basePeriod = calculateReportBasePeriod(report.startTime, report.endTime);
+                const hourMeterDiff = report.finalHourMeter - report.initialHourMeter;
+                const fuelEfficiency = report.workedHours > 0 ? (report.fuel / report.workedHours) : 0;
+                
+                const rowData = [
+                    formatDate(report.date),
+                    report.equipment,
+                    report.operator,
+                    report.farm,
+                    report.lot,
+                    report.startTime,
+                    report.endTime,
+                    (report.breakHours || 0).toFixed(1) + 'h',
+                    (report.returnHours || 0).toFixed(1) + 'h',
+                    report.workedHours.toFixed(1) + 'h',
+                    basePeriod.toFixed(1) + 'h',
+                    report.initialHourMeter.toString(),
+                    report.finalHourMeter.toString(),
+                    hourMeterDiff.toFixed(1) + 'h',
+                    report.fuel.toFixed(1) + 'L',
+                    fuelEfficiency.toFixed(2) + 'L/h',
+                    getServiceTypeName(report.serviceType),
+                    getStatusName(report.status),
+                    report.observations || 'N/A'
+                ];
+                
+                rowData.forEach((data, i) => {
+                    // Use full text without truncation
+                    let text = data.toString();
+                    
+                    // Adjust font size for better fit if needed
+                    if (text.length > 15 && colWidths[i] < 20) {
+                        doc.setFontSize(5);
+                    } else {
+                        doc.setFontSize(6);
+                    }
+                    
+                    // Left align text in column for better readability
+                    const textX = xPos + 1;
+                    
+                    // Color coding for specific columns
+                    if (i === headers.indexOf('Status')) {
+                        // Status column color coding
+                        if (report.status === 'concluido') {
+                            doc.setTextColor(22, 163, 74); // Green
+                        } else if (report.status === 'quebrado' || report.status === 'manutencao') {
+                            doc.setTextColor(220, 38, 38); // Red
+                        } else if (report.status === 'em-andamento') {
+                            doc.setTextColor(59, 130, 246); // Blue
+                        } else {
+                            doc.setTextColor(107, 114, 128); // Gray
+                        }
+                        doc.setFont(undefined, 'bold');
+                    } else if (i === headers.indexOf('Eficiência')) {
+                        // Efficiency color coding - using local efficiency instead of global
+                        if (fuelEfficiency > 15) {
+                            doc.setTextColor(220, 38, 38); // Red for high consumption
+                        } else if (fuelEfficiency < 8) {
+                            doc.setTextColor(22, 163, 74); // Green for low consumption
+                        } else {
+                            doc.setTextColor(0, 0, 0);
+                        }
+                    } else {
+                        doc.setTextColor(0, 0, 0);
+                        doc.setFont(undefined, 'normal');
+                    }
+                    
+                    doc.text(text, textX, yPos + 4.5);
+                    
+                    // Add column separators
+                    if (i < rowData.length - 1) {
+                        doc.setDrawColor(226, 232, 240);
+                        doc.setLineWidth(0.1);
+                        doc.line(xPos + colWidths[i], yPos, xPos + colWidths[i], yPos + 7);
+                    }
+                    
+                    xPos += colWidths[i];
+                });
+                
+                yPos += 7;
+            });
+            
+            // Enhanced summary section with comprehensive statistics
+            yPos += 10;
+            if (yPos > 160) {
+                doc.addPage('landscape');
+                yPos = 20;
+            }
+            
+            // Summary header with gradient
+            doc.setFillColor(25, 118, 210);
+            doc.rect(5, yPos, 287, 12, 'F');
+            doc.setFillColor(33, 150, 243);
+            doc.rect(5, yPos, 287, 8, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(12);
+            const summaryTitle = 'RESUMO EXECUTIVO E ANÁLISE ESTATÍSTICA';
+            const summaryTitleWidth = doc.getTextWidth(summaryTitle);
+            doc.text(summaryTitle, (297 - summaryTitleWidth) / 2, yPos + 7);
+            
+            yPos += 18;
+            doc.setTextColor(0, 0, 0);
+            
+            // Calculate comprehensive statistics
+            const totalHours = filteredReports.reduce((sum, r) => sum + r.workedHours, 0);
+            const totalProductiveHours = filteredReports.reduce((sum, r) => sum + calculateReportBasePeriod(r.startTime, r.endTime), 0);
+            const totalFuel = filteredReports.reduce((sum, r) => sum + r.fuel, 0);
+            const totalBreakHours = filteredReports.reduce((sum, r) => sum + (r.breakHours || 0), 0);
+            const totalReturnHours = filteredReports.reduce((sum, r) => sum + (r.returnHours || 0), 0);
+            const uniqueOperators = [...new Set(filteredReports.map(r => r.operator))].length;
+            const uniqueEquipment = [...new Set(filteredReports.map(r => r.equipment))].length;
+            const uniqueFarms = [...new Set(filteredReports.map(r => r.farm))].length;
+            const avgFuelEfficiency = totalHours > 0 ? (totalFuel / totalHours) : 0;
+            const productivity = totalHours > 0 ? (totalProductiveHours / totalHours * 100) : 0;
+            const totalDays = [...new Set(filteredReports.map(r => r.date))].length;
+            
+            // Status distribution
+            const statusCount = {};
+            filteredReports.forEach(r => {
+                statusCount[r.status] = (statusCount[r.status] || 0) + 1;
+            });
+            
+            // KPI boxes with enhanced styling
+            const kpiBoxes = [
+                { label: 'Total de Registros', value: filteredReports.length.toString(), color: [59, 130, 246] },
+                { label: 'Horas Trabalhadas', value: totalHours.toFixed(1) + 'h', color: [16, 185, 129] },
+                { label: 'Horas Produtivas', value: totalProductiveHours.toFixed(1) + 'h', color: [245, 158, 11] },
+                { label: 'Produtividade', value: productivity.toFixed(1) + '%', color: [139, 92, 246] },
+                { label: 'Combustível Total', value: totalFuel.toFixed(1) + 'L', color: [239, 68, 68] },
+                { label: 'Eficiência Média', value: avgFuelEfficiency.toFixed(2) + 'L/h', color: [6, 182, 212] },
+                { label: 'Operadores Ativos', value: uniqueOperators.toString(), color: [34, 197, 94] },
+                { label: 'Equipamentos', value: uniqueEquipment.toString(), color: [168, 85, 247] },
+                { label: 'Fazendas/Locais', value: uniqueFarms.toString(), color: [14, 165, 233] },
+                { label: 'Dias de Operação', value: totalDays.toString(), color: [99, 102, 241] },
+                { label: 'H. Intervalos', value: totalBreakHours.toFixed(1) + 'h', color: [251, 146, 60] },
+                { label: 'H. Deslocamento', value: totalReturnHours.toFixed(1) + 'h', color: [244, 63, 94] }
+            ];
+            
+            // Draw KPI boxes in a 4x3 grid
+            kpiBoxes.forEach((kpi, index) => {
+                const row = Math.floor(index / 4);
+                const col = index % 4;
+                const x = 10 + (col * 70);
+                const y = yPos + (row * 25);
+                
+                // KPI box with gradient effect
+                doc.setFillColor(kpi.color[0], kpi.color[1], kpi.color[2]);
+                doc.rect(x, y, 65, 20, 'F');
+                doc.setFillColor(255, 255, 255);
+                doc.rect(x + 1, y + 1, 63, 18, 'F');
+                
+                // KPI value
+                doc.setTextColor(kpi.color[0], kpi.color[1], kpi.color[2]);
+                doc.setFont(undefined, 'bold');
+                doc.setFontSize(14);
+                const valueWidth = doc.getTextWidth(kpi.value);
+                doc.text(kpi.value, x + (65 - valueWidth) / 2, y + 10);
+                
+                // KPI label
+                doc.setTextColor(100, 100, 100);
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(7);
+                const labelWidth = doc.getTextWidth(kpi.label);
+                doc.text(kpi.label, x + (65 - labelWidth) / 2, y + 16);
+            });
+            
+            yPos += 85;
+            
+            // Equipment and operator performance tables
+            if (yPos > 140) {
+                doc.addPage('landscape');
+                yPos = 20;
+            }
+            
+            // Performance analysis header
+            doc.setFillColor(34, 197, 94);
+            doc.rect(5, yPos, 140, 8, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.text('TOP 5 EQUIPAMENTOS (HORAS)', 10, yPos + 6);
+            
+            doc.setFillColor(239, 68, 68);
+            doc.rect(152, yPos, 140, 8, 'F');
+            doc.text('TOP 5 OPERADORES (HORAS)', 157, yPos + 6);
+            
+            yPos += 12;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(8);
+            
+            // Equipment ranking
+            const equipmentHours = {};
+            filteredReports.forEach(r => {
+                equipmentHours[r.equipment] = (equipmentHours[r.equipment] || 0) + r.workedHours;
+            });
+            
+            const topEquipment = Object.entries(equipmentHours)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            // Operator ranking
+            const operatorHours = {};
+            filteredReports.forEach(r => {
+                operatorHours[r.operator] = (operatorHours[r.operator] || 0) + r.workedHours;
+            });
+            
+            const topOperators = Object.entries(operatorHours)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            // Draw ranking tables
+            topEquipment.forEach((item, index) => {
+                const y = yPos + (index * 6);
+                doc.setFillColor(index % 2 === 0 ? 248 : 255, 250, 252);
+                doc.rect(5, y, 140, 6, 'F');
+                doc.text(`${index + 1}. ${item[0]}`, 10, y + 4);
+                doc.text(`${item[1].toFixed(1)}h`, 120, y + 4);
+            });
+            
+            topOperators.forEach((item, index) => {
+                const y = yPos + (index * 6);
+                doc.setFillColor(index % 2 === 0 ? 248 : 255, 250, 252);
+                doc.rect(152, y, 140, 6, 'F');
+                doc.text(`${index + 1}. ${item[0]}`, 157, y + 4);
+                doc.text(`${item[1].toFixed(1)}h`, 267, y + 4);
+            });
+            
+            // Enhanced footer on all pages
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                
+                // Footer background
+                doc.setFillColor(248, 250, 252);
+                doc.rect(0, 200, 297, 10, 'F');
+                
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                doc.text('Sistema de Relatórios - Máquinas Pesadas | Relatório Confidencial e Detalhado', 10, 206);
+                doc.text(`Página ${i} de ${totalPages} | Gerado em ${currentDate}`, 220, 206);
+            }
+            
+            try {
+                doc.save('planilha-detalhada-completa.pdf');
+                alert('PDF exportado com sucesso!');
+            } catch (error) {
+                alert('Erro ao salvar o PDF. Tente novamente.');
+                console.error('Erro ao salvar PDF:', error);
+            }
+        }
+
+        function exportTimeControl() {
+            const filteredReports = getFilteredReports();
+            
+            if (filteredReports.length === 0) {
+                alert('Nenhum relatório para exportar! Use os filtros para selecionar dados.');
+                return;
+            }
+            
+            // Verificar se a biblioteca jsPDF está carregada
+            let jsPDF;
+            try {
+                if (window.jspdf && window.jspdf.jsPDF) {
+                    jsPDF = window.jspdf.jsPDF;
+                } else if (window.jsPDF) {
+                    jsPDF = window.jsPDF;
+                } else {
+                    throw new Error('jsPDF não encontrado');
+                }
+            } catch (error) {
+                alert('Erro: Biblioteca PDF não carregada. Recarregue a página e tente novamente.');
+                console.error('Erro jsPDF:', error);
+                return;
+            }
+            
+            let doc;
+            try {
+                doc = new jsPDF();
+            } catch (error) {
+                alert('Erro ao criar documento PDF. Verifique se a página foi carregada completamente.');
+                console.error('Erro ao criar PDF:', error);
+                return;
+            }
+            
+            // Header with professional styling
+            doc.setFillColor(34, 139, 34); // Forest green background
+            doc.rect(0, 0, 210, 25, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            const title = 'CONTROLE DE PONTO - OPERADORES';
+            const titleWidth = doc.getTextWidth(title);
+            doc.text(title, (210 - titleWidth) / 2, 16);
+            
+            // Reset text color
+            doc.setTextColor(0, 0, 0);
+            
+            // Period and generation info
+            const startDate = document.getElementById('exportStartDate').value;
+            const endDate = document.getElementById('exportEndDate').value;
+            const currentDate = new Date().toLocaleDateString('pt-BR');
+            const currentTime = new Date().toLocaleTimeString('pt-BR');
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            
+            let periodText = 'Período: ';
+            if (startDate && endDate) {
+                periodText += `${formatDate(startDate)} até ${formatDate(endDate)}`;
+            } else {
+                periodText += 'Todos os registros';
+            }
+            
+            doc.text(periodText, 15, 32);
+            doc.text(`Gerado em: ${currentDate} às ${currentTime}`, 15, 38);
+            
+            // Group by operator and sort
+            const operatorGroups = {};
+            filteredReports.forEach(report => {
+                if (!operatorGroups[report.operator]) {
+                    operatorGroups[report.operator] = [];
+                }
+                operatorGroups[report.operator].push(report);
+            });
+            
+            // Sort operators alphabetically and sort reports by date
+            const sortedOperators = Object.keys(operatorGroups).sort();
+            sortedOperators.forEach(operator => {
+                operatorGroups[operator].sort((a, b) => new Date(a.date) - new Date(b.date));
+            });
+            
+            let yPos = 50;
+            let pageNumber = 1;
+            
+            sortedOperators.forEach((operator, operatorIndex) => {
+                const operatorReports = operatorGroups[operator];
+                
+                // Check if we need a new page for operator header
+                if (yPos > 250) {
+                    doc.addPage();
+                    yPos = 20;
+                    pageNumber++;
+                }
+                
+                // Operator header with background
+                doc.setFillColor(240, 248, 255);
+                doc.rect(10, yPos - 2, 190, 12, 'F');
+                doc.setDrawColor(34, 139, 34);
+                doc.rect(10, yPos - 2, 190, 12, 'D');
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text(`OPERADOR: ${operator.toUpperCase()}`, 15, yPos + 6);
+                
+                yPos += 20;
+                
+                // Table headers for this operator
+                doc.setFillColor(220, 220, 220);
+                doc.rect(15, yPos, 170, 8, 'F');
+                doc.setDrawColor(0, 0, 0);
+                doc.rect(15, yPos, 170, 8, 'D');
+                
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'bold');
+                
+                // Column headers
+                const headers = ['Data', 'Equipamento', 'Entrada', 'Saída', 'Intervalo', 'Retorno', 'Total H.', 'Fazenda', 'Status'];
+                const colPositions = [20, 40, 65, 80, 95, 110, 125, 145, 165];
+                
+                headers.forEach((header, i) => {
+                    doc.text(header, colPositions[i], yPos + 6);
+                });
+                
+                yPos += 8;
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(8);
+                
+                // Operator data rows
+                let operatorTotalHours = 0;
+                let operatorDays = 0;
+                
+                operatorReports.forEach((report, reportIndex) => {
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                        pageNumber++;
+                        
+                        // Redraw operator header on new page
+                        doc.setFillColor(240, 248, 255);
+                        doc.rect(10, yPos - 2, 190, 12, 'F');
+                        doc.setDrawColor(34, 139, 34);
+                        doc.rect(10, yPos - 2, 190, 12, 'D');
+                        
+                        doc.setFontSize(12);
+                        doc.setFont(undefined, 'bold');
+                        doc.text(`${operator.toUpperCase()} (continuação)`, 15, yPos + 6);
+                        yPos += 20;
+                        
+                        // Redraw table headers
+                        doc.setFillColor(220, 220, 220);
+                        doc.rect(15, yPos, 170, 8, 'F');
+                        doc.rect(15, yPos, 170, 8, 'D');
+                        
+                        doc.setFontSize(9);
+                        doc.setFont(undefined, 'bold');
+                        headers.forEach((header, i) => {
+                            doc.text(header, colPositions[i], yPos + 6);
+                        });
+                        
+                        yPos += 8;
+                        doc.setFont(undefined, 'normal');
+                        doc.setFontSize(8);
+                    }
+                    
+                    // Alternating row colors
+                    if (reportIndex % 2 === 0) {
+                        doc.setFillColor(250, 250, 250);
+                        doc.rect(15, yPos, 170, 6, 'F');
+                    }
+                    
+                    // Draw row border
+                    doc.setDrawColor(200, 200, 200);
+                    doc.rect(15, yPos, 170, 6, 'D');
+                    
+                    // Row data
+                    const rowData = [
+                        formatDate(report.date),
+                        report.equipment,
+                        report.startTime,
+                        report.endTime,
+                        (report.breakHours || 0).toFixed(1) + 'h',
+                        (report.returnHours || 0).toFixed(1) + 'h',
+                        report.workedHours.toFixed(1) + 'h',
+                        report.farm,
+                        getStatusName(report.status)
+                    ];
+                    
+                    rowData.forEach((data, i) => {
+                        doc.text(data, colPositions[i], yPos + 4);
+                    });
+                    
+                    operatorTotalHours += report.workedHours;
+                    operatorDays++;
+                    yPos += 6;
+                });
+                
+                // Operator summary
+                yPos += 5;
+                doc.setFillColor(255, 248, 220);
+                doc.rect(15, yPos, 170, 15, 'F');
+                doc.setDrawColor(255, 165, 0);
+                doc.rect(15, yPos, 170, 15, 'D');
+                
+                // Calculate total break and return hours for operator
+                const operatorBreakHours = operatorReports.reduce((sum, r) => sum + (r.breakHours || 0), 0);
+                const operatorReturnHours = operatorReports.reduce((sum, r) => sum + (r.returnHours || 0), 0);
+                
+                doc.setFont(undefined, 'bold');
+                doc.setFontSize(8);
+                doc.text(`RESUMO - ${operator.toUpperCase()}:`, 20, yPos + 5);
+                doc.text(`Total Horas: ${operatorTotalHours.toFixed(1)}h`, 20, yPos + 9);
+                doc.text(`Intervalos: ${operatorBreakHours.toFixed(1)}h`, 20, yPos + 13);
+                doc.text(`Dias: ${operatorDays}`, 100, yPos + 5);
+                doc.text(`Retorno: ${operatorReturnHours.toFixed(1)}h`, 100, yPos + 9);
+                doc.text(`Média/dia: ${(operatorTotalHours / operatorDays).toFixed(1)}h`, 100, yPos + 13);
+                
+                yPos += 25;
+                doc.setFont(undefined, 'normal');
+            });
+            
+            // General summary on last page
+            yPos += 10;
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+                pageNumber++;
+            }
+            
+            // Final summary
+            doc.setFillColor(34, 139, 34);
+            doc.rect(10, yPos, 190, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(11);
+            doc.text('RESUMO GERAL DO PERÍODO', 15, yPos + 7);
+            
+            yPos += 15;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            
+            const totalHours = filteredReports.reduce((sum, r) => sum + r.workedHours, 0);
+            const totalOperators = sortedOperators.length;
+            const totalDays = [...new Set(filteredReports.map(r => r.date))].length;
+            
+            const summaryItems = [
+                `Total de Operadores: ${totalOperators}`,
+                `Total de Horas: ${totalHours.toFixed(1)}h`,
+                `Dias de Operação: ${totalDays}`,
+                `Média por Operador: ${(totalHours / totalOperators).toFixed(1)}h`,
+                `Total de Registros: ${filteredReports.length}`,
+                `Média Diária Geral: ${(totalHours / totalDays).toFixed(1)}h`
+            ];
+            
+            summaryItems.forEach((item, index) => {
+                const row = Math.floor(index / 2);
+                const col = index % 2;
+                const x = 20 + (col * 95);
+                const y = yPos + (row * 8);
+                doc.text(item, x, y);
+            });
+            
+            // Footer on every page
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(128, 128, 128);
+                doc.text('Sistema de Controle de Ponto - Máquinas Pesadas', 15, 290);
+                doc.text(`Página ${i} de ${totalPages}`, 170, 290);
+            }
+            
+            try {
+                doc.save('controle-ponto-operadores.pdf');
+                alert('PDF exportado com sucesso!');
+            } catch (error) {
+                alert('Erro ao salvar o PDF. Tente novamente.');
+                console.error('Erro ao salvar PDF:', error);
+            }
+        }
+
+        function exportExecutiveSummary() {
+            const filteredReports = getFilteredReports();
+            
+            if (filteredReports.length === 0) {
+                alert('Nenhum relatório para exportar! Use os filtros para selecionar dados.');
+                return;
+            }
+            
+            // Verificar se a biblioteca jsPDF está carregada
+            let jsPDF;
+            try {
+                if (window.jspdf && window.jspdf.jsPDF) {
+                    jsPDF = window.jspdf.jsPDF;
+                } else if (window.jsPDF) {
+                    jsPDF = window.jsPDF;
+                } else {
+                    throw new Error('jsPDF não encontrado');
+                }
+            } catch (error) {
+                alert('Erro: Biblioteca PDF não carregada. Recarregue a página e tente novamente.');
+                console.error('Erro jsPDF:', error);
+                return;
+            }
+            
+            let doc;
+            try {
+                doc = new jsPDF();
+            } catch (error) {
+                alert('Erro ao criar documento PDF. Verifique se a página foi carregada completamente.');
+                console.error('Erro ao criar PDF:', error);
+                return;
+            }
+            
+            // Executive header with gradient-like effect
+            doc.setFillColor(75, 0, 130); // Indigo background
+            doc.rect(0, 0, 210, 30, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(20);
+            doc.setFont(undefined, 'bold');
+            const title = 'RESUMO EXECUTIVO';
+            const titleWidth = doc.getTextWidth(title);
+            doc.text(title, (210 - titleWidth) / 2, 20);
+            
+            // Subtitle
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'normal');
+            const subtitle = 'Relatório Gerencial - Máquinas Pesadas';
+            const subtitleWidth = doc.getTextWidth(subtitle);
+            doc.text(subtitle, (210 - subtitleWidth) / 2, 26);
+            
+            // Reset text color
+            doc.setTextColor(0, 0, 0);
+            
+            // Period and generation info
+            const startDate = document.getElementById('exportStartDate').value;
+            const endDate = document.getElementById('exportEndDate').value;
+            const currentDate = new Date().toLocaleDateString('pt-BR');
+            const currentTime = new Date().toLocaleTimeString('pt-BR');
+            
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'normal');
+            
+            let periodText = 'Período de Análise: ';
+            if (startDate && endDate) {
+                periodText += `${formatDate(startDate)} até ${formatDate(endDate)}`;
+            } else {
+                periodText += 'Todos os registros disponíveis';
+            }
+            
+            doc.text(periodText, 15, 40);
+            doc.text(`Relatório gerado em: ${currentDate} às ${currentTime}`, 15, 46);
+            
+            let yPos = 60;
+            
+            // Key Performance Indicators (KPIs) section
+            doc.setFillColor(240, 248, 255);
+            doc.rect(10, yPos, 190, 50, 'F');
+            doc.setDrawColor(75, 0, 130);
+            doc.rect(10, yPos, 190, 50, 'D');
+            
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(75, 0, 130);
+            doc.text('INDICADORES PRINCIPAIS (KPIs)', 15, yPos + 8);
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(10);
+            
+            // Calculate KPIs
+            const totalHours = filteredReports.reduce((sum, r) => sum + r.workedHours, 0);
+            const totalProductiveHours = filteredReports.reduce((sum, r) => sum + calculateReportBasePeriod(r.startTime, r.endTime), 0);
+            const totalFuel = filteredReports.reduce((sum, r) => sum + r.fuel, 0);
+            const uniqueOperators = [...new Set(filteredReports.map(r => r.operator))].length;
+            const uniqueEquipment = [...new Set(filteredReports.map(r => r.equipment))].length;
+            const avgFuelEfficiency = totalHours > 0 ? (totalFuel / totalHours) : 0;
+            const totalDays = [...new Set(filteredReports.map(r => r.date))].length;
+            const productivity = totalProductiveHours > 0 ? (totalProductiveHours / totalHours * 100) : 0;
+            
+            // KPI boxes
+            const kpis = [
+                { label: 'Total de Registros', value: filteredReports.length.toString(), unit: 'registros' },
+                { label: 'Horas Trabalhadas', value: totalHours.toFixed(1), unit: 'horas' },
+                { label: 'Horas Produtivas', value: totalProductiveHours.toFixed(1), unit: 'horas' },
+                { label: 'Produtividade', value: productivity.toFixed(1), unit: '%' },
+                { label: 'Combustível Total', value: totalFuel.toFixed(1), unit: 'litros' },
+                { label: 'Eficiência Combustível', value: avgFuelEfficiency.toFixed(2), unit: 'L/h' },
+                { label: 'Operadores Ativos', value: uniqueOperators.toString(), unit: 'pessoas' },
+                { label: 'Equipamentos', value: uniqueEquipment.toString(), unit: 'máquinas' }
+            ];
+            
+            kpis.forEach((kpi, index) => {
+                const row = Math.floor(index / 4);
+                const col = index % 4;
+                const x = 15 + (col * 45);
+                const y = yPos + 15 + (row * 15);
+                
+                doc.setFont(undefined, 'bold');
+                doc.setFontSize(12);
+                doc.text(kpi.value, x, y);
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(8);
+                doc.text(kpi.unit, x, y + 4);
+                doc.setFontSize(7);
+                doc.text(kpi.label, x, y + 8);
+            });
+            
+            yPos += 65;
+            
+            // Equipment Performance Analysis
+            doc.setFillColor(255, 248, 220);
+            doc.rect(10, yPos, 190, 8, 'F');
+            doc.setDrawColor(255, 140, 0);
+            doc.rect(10, yPos, 190, 8, 'D');
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(255, 140, 0);
+            doc.text('ANÁLISE DE DESEMPENHO POR EQUIPAMENTO', 15, yPos + 6);
+            
+            yPos += 15;
+            doc.setTextColor(0, 0, 0);
+            
+            // Equipment summary table
+            const equipmentSummary = {};
+            filteredReports.forEach(report => {
+                if (!equipmentSummary[report.equipment]) {
+                    equipmentSummary[report.equipment] = { 
+                        hours: 0, 
+                        productiveHours: 0,
+                        fuel: 0, 
+                        count: 0,
+                        avgDaily: 0
+                    };
+                }
+                equipmentSummary[report.equipment].hours += report.workedHours;
+                equipmentSummary[report.equipment].productiveHours += calculateReportBasePeriod(report.startTime, report.endTime);
+                equipmentSummary[report.equipment].fuel += report.fuel;
+                equipmentSummary[report.equipment].count += 1;
+            });
+            
+            // Table headers
+            doc.setFillColor(230, 230, 230);
+            doc.rect(15, yPos, 180, 8, 'F');
+            doc.setDrawColor(0, 0, 0);
+            doc.rect(15, yPos, 180, 8, 'D');
+            
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8);
+            
+            const equipHeaders = ['Equipamento', 'Total H.', 'Produtivo H.', 'Combustível', 'Eficiência', 'Registros', 'Média Diária'];
+            const equipColPos = [20, 65, 90, 115, 140, 165, 180];
+            
+            equipHeaders.forEach((header, i) => {
+                doc.text(header, equipColPos[i], yPos + 6);
+            });
+            
+            yPos += 8;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(7);
+            
+            // Equipment data rows
+            Object.entries(equipmentSummary).forEach(([equipment, data], index) => {
+                if (yPos > 260) {
+                    doc.addPage();
+                    yPos = 20;
+                    
+                    // Redraw headers on new page
+                    doc.setFillColor(230, 230, 230);
+                    doc.rect(15, yPos, 180, 8, 'F');
+                    doc.rect(15, yPos, 180, 8, 'D');
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.setFontSize(8);
+                    equipHeaders.forEach((header, i) => {
+                        doc.text(header, equipColPos[i], yPos + 6);
+                    });
+                    
+                    yPos += 8;
+                    doc.setFont(undefined, 'normal');
+                    doc.setFontSize(7);
+                }
+                
+                // Alternating row colors
+                if (index % 2 === 0) {
+                    doc.setFillColor(248, 248, 248);
+                    doc.rect(15, yPos, 180, 6, 'F');
+                }
+                
+                doc.setDrawColor(200, 200, 200);
+                doc.rect(15, yPos, 180, 6, 'D');
+                
+                const efficiency = data.hours > 0 ? (data.fuel / data.hours) : 0;
+                const avgDaily = data.count > 0 ? (data.hours / data.count) : 0;
+                
+                const equipRowData = [
+                    equipment.length > 12 ? equipment.substring(0, 12) + '...' : equipment,
+                    data.hours.toFixed(1) + 'h',
+                    data.productiveHours.toFixed(1) + 'h',
+                    data.fuel.toFixed(1) + 'L',
+                    efficiency.toFixed(2) + 'L/h',
+                    data.count.toString(),
+                    avgDaily.toFixed(1) + 'h'
+                ];
+                
+                equipRowData.forEach((cellData, i) => {
+                    doc.text(cellData, equipColPos[i], yPos + 4);
+                });
+                
+                yPos += 6;
+            });
+            
+            yPos += 10;
+            
+            // Operator Performance Analysis
+            if (yPos > 220) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFillColor(240, 255, 240);
+            doc.rect(10, yPos, 190, 8, 'F');
+            doc.setDrawColor(34, 139, 34);
+            doc.rect(10, yPos, 190, 8, 'D');
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(34, 139, 34);
+            doc.text('ANÁLISE DE DESEMPENHO POR OPERADOR', 15, yPos + 6);
+            
+            yPos += 15;
+            doc.setTextColor(0, 0, 0);
+            
+            // Operator summary
+            const operatorSummary = {};
+            filteredReports.forEach(report => {
+                if (!operatorSummary[report.operator]) {
+                    operatorSummary[report.operator] = { 
+                        hours: 0, 
+                        fuel: 0, 
+                        count: 0,
+                        equipment: new Set()
+                    };
+                }
+                operatorSummary[report.operator].hours += report.workedHours;
+                operatorSummary[report.operator].fuel += report.fuel;
+                operatorSummary[report.operator].count += 1;
+                operatorSummary[report.operator].equipment.add(report.equipment);
+            });
+            
+            // Operator table headers
+            doc.setFillColor(230, 230, 230);
+            doc.rect(15, yPos, 180, 8, 'F');
+            doc.rect(15, yPos, 180, 8, 'D');
+            
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(8);
+            
+            const opHeaders = ['Operador', 'Total Horas', 'Combustível', 'Eficiência', 'Registros', 'Equipamentos', 'Média/Dia'];
+            const opColPos = [20, 60, 90, 115, 140, 160, 180];
+            
+            opHeaders.forEach((header, i) => {
+                doc.text(header, opColPos[i], yPos + 6);
+            });
+            
+            yPos += 8;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(7);
+            
+            // Operator data rows
+            Object.entries(operatorSummary).forEach(([operator, data], index) => {
+                if (yPos > 260) {
+                    doc.addPage();
+                    yPos = 20;
+                    
+                    // Redraw headers
+                    doc.setFillColor(230, 230, 230);
+                    doc.rect(15, yPos, 180, 8, 'F');
+                    doc.rect(15, yPos, 180, 8, 'D');
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.setFontSize(8);
+                    opHeaders.forEach((header, i) => {
+                        doc.text(header, opColPos[i], yPos + 6);
+                    });
+                    
+                    yPos += 8;
+                    doc.setFont(undefined, 'normal');
+                    doc.setFontSize(7);
+                }
+                
+                if (index % 2 === 0) {
+                    doc.setFillColor(248, 248, 248);
+                    doc.rect(15, yPos, 180, 6, 'F');
+                }
+                
+                doc.setDrawColor(200, 200, 200);
+                doc.rect(15, yPos, 180, 6, 'D');
+                
+                const opEfficiency = data.hours > 0 ? (data.fuel / data.hours) : 0;
+                const opAvgDaily = data.count > 0 ? (data.hours / data.count) : 0;
+                
+                const opRowData = [
+                    operator.length > 10 ? operator.substring(0, 10) + '...' : operator,
+                    data.hours.toFixed(1) + 'h',
+                    data.fuel.toFixed(1) + 'L',
+                    opEfficiency.toFixed(2) + 'L/h',
+                    data.count.toString(),
+                    data.equipment.size.toString(),
+                    opAvgDaily.toFixed(1) + 'h'
+                ];
+                
+                opRowData.forEach((cellData, i) => {
+                    doc.text(cellData, opColPos[i], yPos + 4);
+                });
+                
+                yPos += 6;
+            });
+            
+            // Final summary and recommendations
+            yPos += 15;
+            if (yPos > 240) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFillColor(255, 240, 240);
+            doc.rect(10, yPos, 190, 8, 'F');
+            doc.setDrawColor(220, 20, 60);
+            doc.rect(10, yPos, 190, 8, 'D');
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(220, 20, 60);
+            doc.text('CONCLUSÕES E RECOMENDAÇÕES', 15, yPos + 6);
+            
+            yPos += 15;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            
+            const conclusions = [
+                `• Produtividade geral da frota: ${productivity.toFixed(1)}%`,
+                `• Consumo médio de combustível: ${avgFuelEfficiency.toFixed(2)} L/hora`,
+                `• Utilização média por equipamento: ${(totalHours / uniqueEquipment).toFixed(1)} horas`,
+                `• Carga de trabalho por operador: ${(totalHours / uniqueOperators).toFixed(1)} horas`,
+                `• Período de análise: ${totalDays} dias de operação`,
+                '',
+                'RECOMENDAÇÕES:',
+                '• Monitorar equipamentos com baixa eficiência de combustível',
+                '• Otimizar distribuição de carga de trabalho entre operadores',
+                '• Implementar manutenção preventiva baseada nas horas trabalhadas',
+                '• Avaliar necessidade de treinamento para operadores menos produtivos'
+            ];
+            
+            conclusions.forEach(conclusion => {
+                if (yPos > 280) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                doc.text(conclusion, 15, yPos);
+                yPos += 6;
+            });
+            
+            // Footer on all pages
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(128, 128, 128);
+                doc.text('Relatório Executivo - Sistema de Máquinas Pesadas | Confidencial', 15, 290);
+                doc.text(`Página ${i} de ${totalPages}`, 170, 290);
+            }
+            
+            try {
+                doc.save('resumo-executivo.pdf');
+                alert('PDF exportado com sucesso!');
+            } catch (error) {
+                alert('Erro ao salvar o PDF. Tente novamente.');
+                console.error('Erro ao salvar PDF:', error);
+            }
+        }
+
+        function exportFuelConsumption() {
+            const filteredReports = getFilteredReports();
+            
+            if (filteredReports.length === 0) {
+                alert('Nenhum relatório para exportar! Use os filtros para selecionar dados.');
+                return;
+            }
+            
+            // Verificar se a biblioteca jsPDF está carregada
+            let jsPDF;
+            try {
+                if (window.jspdf && window.jspdf.jsPDF) {
+                    jsPDF = window.jspdf.jsPDF;
+                } else if (window.jsPDF) {
+                    jsPDF = window.jsPDF;
+                } else {
+                    throw new Error('jsPDF não encontrado');
+                }
+            } catch (error) {
+                alert('Erro: Biblioteca PDF não carregada. Recarregue a página e tente novamente.');
+                console.error('Erro jsPDF:', error);
+                return;
+            }
+            
+            let doc;
+            try {
+                doc = new jsPDF();
+            } catch (error) {
+                alert('Erro ao criar documento PDF. Verifique se a página foi carregada completamente.');
+                console.error('Erro ao criar PDF:', error);
+                return;
+            }
+            
+            // Header with fuel theme
+            doc.setFillColor(255, 69, 0); // Red-orange background
+            doc.rect(0, 0, 210, 25, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            const title = 'RELATÓRIO DE CONSUMO DE COMBUSTÍVEL';
+            const titleWidth = doc.getTextWidth(title);
+            doc.text(title, (210 - titleWidth) / 2, 16);
+            
+            // Reset text color
+            doc.setTextColor(0, 0, 0);
+            
+            // Period and generation info
+            const startDate = document.getElementById('exportStartDate').value;
+            const endDate = document.getElementById('exportEndDate').value;
+            const currentDate = new Date().toLocaleDateString('pt-BR');
+            const currentTime = new Date().toLocaleTimeString('pt-BR');
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            
+            let periodText = 'Período de Análise: ';
+            if (startDate && endDate) {
+                periodText += `${formatDate(startDate)} até ${formatDate(endDate)}`;
+            } else {
+                periodText += 'Todos os registros disponíveis';
+            }
+            
+            doc.text(periodText, 15, 32);
+            doc.text(`Relatório gerado em: ${currentDate} às ${currentTime}`, 15, 38);
+            
+            let yPos = 50;
+            
+            // Summary overview
+            const totalFuelGeneral = filteredReports.reduce((sum, r) => sum + r.fuel, 0);
+            const totalHoursGeneral = filteredReports.reduce((sum, r) => sum + r.workedHours, 0);
+            const avgEfficiencyGeneral = totalHoursGeneral > 0 ? totalFuelGeneral / totalHoursGeneral : 0;
+            const uniqueEquipment = [...new Set(filteredReports.map(r => r.equipment))].length;
+            
+            // Overview box
+            doc.setFillColor(255, 248, 220);
+            doc.rect(10, yPos, 190, 35, 'F');
+            doc.setDrawColor(255, 140, 0);
+            doc.rect(10, yPos, 190, 35, 'D');
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(255, 140, 0);
+            doc.text('RESUMO GERAL DO CONSUMO', 15, yPos + 8);
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(10);
+            
+            const overviewData = [
+                [`Consumo Total:`, `${totalFuelGeneral.toFixed(1)} litros`],
+                [`Horas Operacionais:`, `${totalHoursGeneral.toFixed(1)} horas`],
+                [`Eficiência Média:`, `${avgEfficiencyGeneral.toFixed(2)} L/hora`],
+                [`Equipamentos Analisados:`, `${uniqueEquipment} máquinas`]
+            ];
+            
+            overviewData.forEach((item, index) => {
+                const row = Math.floor(index / 2);
+                const col = index % 2;
+                const x = 20 + (col * 95);
+                const y = yPos + 15 + (row * 8);
+                
+                doc.setFont(undefined, 'bold');
+                doc.text(item[0], x, y);
+                doc.setFont(undefined, 'normal');
+                doc.text(item[1], x + 45, y);
+            });
+            
+            yPos += 50;
+            
+            // Equipment consumption analysis
+            doc.setFillColor(240, 255, 240);
+            doc.rect(10, yPos, 190, 8, 'F');
+            doc.setDrawColor(34, 139, 34);
+            doc.rect(10, yPos, 190, 8, 'D');
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(34, 139, 34);
+            doc.text('ANÁLISE DETALHADA POR EQUIPAMENTO', 15, yPos + 6);
+            
+            yPos += 15;
+            doc.setTextColor(0, 0, 0);
+            
+            // Group and sort equipment data
+            const equipmentGroups = {};
+            filteredReports.forEach(report => {
+                if (!equipmentGroups[report.equipment]) {
+                    equipmentGroups[report.equipment] = {
+                        reports: [],
+                        totalFuel: 0,
+                        totalHours: 0,
+                        totalDays: new Set()
+                    };
+                }
+                equipmentGroups[report.equipment].reports.push(report);
+                equipmentGroups[report.equipment].totalFuel += report.fuel;
+                equipmentGroups[report.equipment].totalHours += report.workedHours;
+                equipmentGroups[report.equipment].totalDays.add(report.date);
+            });
+            
+            // Sort by fuel consumption (highest first)
+            const sortedEquipment = Object.entries(equipmentGroups).sort((a, b) => b[1].totalFuel - a[1].totalFuel);
+            
+            sortedEquipment.forEach(([equipment, data], equipIndex) => {
+                if (yPos > 240) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                // Equipment header
+                doc.setFillColor(255, 250, 240);
+                doc.rect(15, yPos, 180, 12, 'F');
+                doc.setDrawColor(255, 69, 0);
+                doc.rect(15, yPos, 180, 12, 'D');
+                
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(255, 69, 0);
+                doc.text(`${equipment.toUpperCase()}`, 20, yPos + 8);
+                
+                // Equipment summary stats
+                const efficiency = data.totalHours > 0 ? data.totalFuel / data.totalHours : 0;
+                const avgDailyFuel = data.totalDays.size > 0 ? data.totalFuel / data.totalDays.size : 0;
+                const avgDailyHours = data.totalDays.size > 0 ? data.totalHours / data.totalDays.size : 0;
+                
+                doc.setTextColor(0, 0, 0);
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(8);
+                doc.text(`Consumo: ${data.totalFuel.toFixed(1)}L | Horas: ${data.totalHours.toFixed(1)}h | Eficiência: ${efficiency.toFixed(2)}L/h`, 120, yPos + 5);
+                doc.text(`Dias: ${data.totalDays.size} | Média diária: ${avgDailyFuel.toFixed(1)}L/dia`, 120, yPos + 9);
+                
+                yPos += 18;
+                
+                // Detailed consumption table for this equipment
+                doc.setFillColor(230, 230, 230);
+                doc.rect(20, yPos, 170, 8, 'F');
+                doc.setDrawColor(0, 0, 0);
+                doc.rect(20, yPos, 170, 8, 'D');
+                
+                doc.setFont(undefined, 'bold');
+                doc.setFontSize(7);
+                
+                const detailHeaders = ['Data', 'Operador', 'Horas Trab.', 'Combustível', 'Eficiência', 'Fazenda', 'Status'];
+                const detailColPos = [25, 45, 75, 95, 115, 135, 160];
+                
+                detailHeaders.forEach((header, i) => {
+                    doc.text(header, detailColPos[i], yPos + 6);
+                });
+                
+                yPos += 8;
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(6);
+                
+                // Sort reports by date
+                data.reports.sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                data.reports.forEach((report, reportIndex) => {
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                        
+                        // Redraw equipment header on new page
+                        doc.setFillColor(255, 250, 240);
+                        doc.rect(15, yPos, 180, 12, 'F');
+                        doc.setDrawColor(255, 69, 0);
+                        doc.rect(15, yPos, 180, 12, 'D');
+                        
+                        doc.setFontSize(11);
+                        doc.setFont(undefined, 'bold');
+                        doc.setTextColor(255, 69, 0);
+                        doc.text(`${equipment.toUpperCase()} (continuação)`, 20, yPos + 8);
+                        
+                        yPos += 18;
+                        
+                        // Redraw table headers
+                        doc.setFillColor(230, 230, 230);
+                        doc.rect(20, yPos, 170, 8, 'F');
+                        doc.rect(20, yPos, 170, 8, 'D');
+                        
+                        doc.setFont(undefined, 'bold');
+                        doc.setFontSize(7);
+                        detailHeaders.forEach((header, i) => {
+                            doc.text(header, detailColPos[i], yPos + 6);
+                        });
+                        
+                        yPos += 8;
+                        doc.setFont(undefined, 'normal');
+                        doc.setFontSize(6);
+                    }
+                    
+                    // Alternating row colors
+                    if (reportIndex % 2 === 0) {
+                        doc.setFillColor(250, 250, 250);
+                        doc.rect(20, yPos, 170, 5, 'F');
+                    }
+                    
+                    doc.setDrawColor(200, 200, 200);
+                    doc.rect(20, yPos, 170, 5, 'D');
+                    
+                    const reportEfficiency = report.workedHours > 0 ? (report.fuel / report.workedHours) : 0;
+                    
+                    const detailRowData = [
+                        formatDate(report.date),
+                        report.operator.length > 8 ? report.operator.substring(0, 8) + '...' : report.operator,
+                        report.workedHours.toFixed(1) + 'h',
+                        report.fuel.toFixed(1) + 'L',
+                        reportEfficiency.toFixed(2),
+                        report.farm.length > 6 ? report.farm.substring(0, 6) + '...' : report.farm,
+                        getStatusName(report.status).length > 8 ? getStatusName(report.status).substring(0, 8) + '...' : getStatusName(report.status)
+                    ];
+                    
+                    doc.setTextColor(0, 0, 0);
+                    detailRowData.forEach((cellData, i) => {
+                        doc.text(cellData, detailColPos[i], yPos + 3.5);
+                    });
+                    
+                    yPos += 5;
+                });
+                
+                // Equipment subtotal
+                yPos += 3;
+                doc.setFillColor(255, 248, 220);
+                doc.rect(20, yPos, 170, 8, 'F');
+                doc.setDrawColor(255, 165, 0);
+                doc.rect(20, yPos, 170, 8, 'D');
+                
+                doc.setFont(undefined, 'bold');
+                doc.setFontSize(8);
+                doc.setTextColor(255, 140, 0);
+                doc.text(`SUBTOTAL - ${equipment}:`, 25, yPos + 3);
+                doc.text(`${data.totalFuel.toFixed(1)}L`, 95, yPos + 3);
+                doc.text(`${data.totalHours.toFixed(1)}h`, 115, yPos + 3);
+                doc.text(`${efficiency.toFixed(2)}L/h`, 135, yPos + 3);
+                doc.text(`${data.reports.length} registros`, 160, yPos + 6);
+                
+                yPos += 15;
+                doc.setTextColor(0, 0, 0);
+            });
+            
+            // Final analysis and recommendations
+            yPos += 10;
+            if (yPos > 220) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFillColor(255, 240, 245);
+            doc.rect(10, yPos, 190, 8, 'F');
+            doc.setDrawColor(220, 20, 60);
+            doc.rect(10, yPos, 190, 8, 'D');
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(220, 20, 60);
+            doc.text('ANÁLISE DE EFICIÊNCIA E RECOMENDAÇÕES', 15, yPos + 6);
+            
+            yPos += 15;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            
+            // Calculate efficiency rankings
+            const efficiencyRanking = sortedEquipment.map(([equipment, data]) => ({
+                equipment,
+                efficiency: data.totalHours > 0 ? data.totalFuel / data.totalHours : 0,
+                totalFuel: data.totalFuel
+            })).sort((a, b) => a.efficiency - b.efficiency);
+            
+            const mostEfficient = efficiencyRanking[0];
+            const leastEfficient = efficiencyRanking[efficiencyRanking.length - 1];
+            const highestConsumer = sortedEquipment[0];
+            
+            const analysisPoints = [
+                `EQUIPAMENTO MAIS EFICIENTE: ${mostEfficient.equipment} (${mostEfficient.efficiency.toFixed(2)} L/h)`,
+                `EQUIPAMENTO MENOS EFICIENTE: ${leastEfficient.equipment} (${leastEfficient.efficiency.toFixed(2)} L/h)`,
+                `MAIOR CONSUMIDOR: ${highestConsumer[0]} (${highestConsumer[1].totalFuel.toFixed(1)} litros)`,
+                `CONSUMO MÉDIO DA FROTA: ${avgEfficiencyGeneral.toFixed(2)} L/hora`,
+                `VARIAÇÃO DE EFICIÊNCIA: ${((leastEfficient.efficiency - mostEfficient.efficiency) / mostEfficient.efficiency * 100).toFixed(1)}%`,
+                '',
+                'RECOMENDAÇÕES TÉCNICAS:',
+                '• Investigar causas da baixa eficiência em equipamentos com consumo > média + 20%',
+                '• Implementar programa de manutenção preventiva baseado em consumo',
+                '• Treinar operadores dos equipamentos menos eficientes',
+                '• Monitorar qualidade do combustível e filtros',
+                '• Avaliar condições de trabalho (terreno, carga, velocidade)',
+                '• Considerar substituição de equipamentos com eficiência muito baixa'
+            ];
+            
+            analysisPoints.forEach(point => {
+                if (yPos > 280) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                if (point.startsWith('EQUIPAMENTO') || point.startsWith('MAIOR') || point.startsWith('CONSUMO') || point.startsWith('VARIAÇÃO')) {
+                    doc.setFont(undefined, 'bold');
+                } else if (point === 'RECOMENDAÇÕES TÉCNICAS:') {
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(220, 20, 60);
+                } else {
+                    doc.setFont(undefined, 'normal');
+                    doc.setTextColor(0, 0, 0);
+                }
+                
+                doc.text(point, 15, yPos);
+                yPos += 6;
+            });
+            
+            // Footer on all pages
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(128, 128, 128);
+                doc.text('Relatório de Consumo de Combustível - Sistema de Máquinas Pesadas', 15, 290);
+                doc.text(`Página ${i} de ${totalPages}`, 170, 290);
+            }
+            
+            try {
+                doc.save('relatorio-consumo-combustivel.pdf');
+                alert('PDF exportado com sucesso!');
+            } catch (error) {
+                alert('Erro ao salvar o PDF. Tente novamente.');
+                console.error('Erro ao salvar PDF:', error);
+            }
+        }
+
+        // Utility functions for export
+        function getServiceTypeName(serviceType) {
+            const serviceNames = {
+                'preparo-solo': 'Preparo de Solo',
+                'plantio': 'Plantio',
+                'colheita': 'Colheita',
+                'pulverizacao': 'Pulverização',
+                'adubacao': 'Adubação',
+                'irrigacao': 'Irrigação',
+                'cultivo': 'Cultivo',
+                'carregamento-cana': 'Carregamento de Cana',
+                'transporte-cana': 'Transporte de Cana',
+                'limpeza-canavial': 'Limpeza de Canavial',
+                'abertura-carreadores': 'Abertura de Carreadores',
+                'manutencao-estradas': 'Manutenção de Estradas',
+                'movimentacao-terra': 'Movimentação de Terra',
+                'nivelamento': 'Nivelamento',
+                'compactacao': 'Compactação',
+                'dragagem': 'Dragagem',
+                'escavacao': 'Escavação',
+                'aterro': 'Aterro',
+                'demolição': 'Demolição',
+                'fundacao': 'Fundação',
+                'pavimentacao': 'Pavimentação',
+                'drenagem': 'Drenagem',
+                'terraplanagem': 'Terraplanagem',
+                'extracao': 'Extração',
+                'britagem': 'Britagem',
+                'peneiramento': 'Peneiramento',
+                'transporte-minerio': 'Transporte de Minério',
+                'beneficiamento': 'Beneficiamento',
+                'transporte': 'Transporte',
+                'carregamento': 'Carregamento',
+                'descarregamento': 'Descarregamento',
+                'limpeza': 'Limpeza de Área',
+                'manutencao': 'Manutenção',
+                'reparos': 'Reparos',
+                'instalacao': 'Instalação',
+                'desmontagem': 'Desmontagem'
+            };
+            return serviceNames[serviceType] || serviceType;
+        }
+
+        function getStatusName(status) {
+            const statusNames = {
+                'concluido': 'Concluído',
+                'em-andamento': 'Em Andamento',
+                'pausado': 'Pausado',
+                'cancelado': 'Cancelado',
+                'aguardando': 'Aguardando Início',
+                'manutencao': 'Em Manutenção',
+                'quebrado': 'Quebrado/Avariado',
+                'abastecimento': 'Abastecimento',
+                'troca-turno': 'Troca de Turno',
+                'almoco': 'Parada para Almoço',
+                'chuva': 'Parado por Chuva',
+                'falta-operador': 'Falta de Operador',
+                'falta-combustivel': 'Falta de Combustível',
+                'aguardando-material': 'Aguardando Material',
+                'aguardando-liberacao': 'Aguardando Liberação',
+                'transporte': 'Em Transporte',
+                'standby': 'Stand-by',
+                'inativo': 'Inativo'
+            };
+            return statusNames[status] || status;
+        }
+
+        // Calculator functions
+        function populateFilterSelect(type) {
+            const select = document.getElementById('calcFilterSelect');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            
+            if (type === 'equipment') {
+                equipment.forEach(eq => {
+                    select.add(new Option(`${eq.number} - ${eq.type}`, eq.number));
+                });
+            } else if (type === 'operator') {
+                const operators = [...new Set(reports.map(r => r.operator))];
+                operators.forEach(op => {
+                    select.add(new Option(op, op));
+                });
+            }
+        }
+
+        function calculateProductivity() {
+            const startDate = document.getElementById('calcStartDate').value;
+            const endDate = document.getElementById('calcEndDate').value;
+            const filterType = document.getElementById('calcFilterType').value;
+            const filterValue = document.getElementById('calcFilterSelect').value;
+            
+            if (!startDate || !endDate) {
+                alert('Por favor, selecione o período de análise!');
+                return;
+            }
+            
+            let filteredReports = reports.filter(r => {
+                // Compare dates as strings to avoid timezone issues
+                return r.date >= startDate && r.date <= endDate;
+            });
+            
+            if (filterType === 'equipment' && filterValue) {
+                filteredReports = filteredReports.filter(r => r.equipment === filterValue);
+            } else if (filterType === 'operator' && filterValue) {
+                filteredReports = filteredReports.filter(r => r.operator === filterValue);
+            }
+            
+            if (filteredReports.length === 0) {
+                document.getElementById('productivityResults').innerHTML = '<p class="text-gray-600">Nenhum relatório encontrado no período selecionado.</p>';
+                return;
+            }
+            
+            const totalHours = filteredReports.reduce((sum, r) => sum + r.workedHours, 0);
+            const totalFuel = filteredReports.reduce((sum, r) => sum + r.fuel, 0);
+            const avgHoursPerDay = totalHours / filteredReports.length;
+            const fuelEfficiency = totalHours > 0 ? totalFuel / totalHours : 0;
+            
+            const results = `
+                <div class="space-y-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-medium text-blue-800">Total de Horas Trabalhadas</h4>
+                        <p class="text-2xl font-bold text-blue-900">${totalHours.toFixed(1)} horas</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h4 class="font-medium text-green-800">Média de Horas por Dia</h4>
+                        <p class="text-2xl font-bold text-green-900">${avgHoursPerDay.toFixed(1)} horas/dia</p>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <h4 class="font-medium text-yellow-800">Total de Combustível</h4>
+                        <p class="text-2xl font-bold text-yellow-900">${totalFuel.toFixed(1)} litros</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-lg">
+                        <h4 class="font-medium text-red-800">Eficiência de Combustível</h4>
+                        <p class="text-2xl font-bold text-red-900">${fuelEfficiency.toFixed(2)} L/hora</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-800">Número de Relatórios</h4>
+                        <p class="text-2xl font-bold text-gray-900">${filteredReports.length}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('productivityResults').innerHTML = results;
+        }
+
+        // Helper function to calculate base period for existing reports
+        function calculateReportBasePeriod(startTime, endTime) {
+            if (!startTime || !endTime) return 0;
+            
+            const start = new Date(`2000-01-01T${startTime}`);
+            const end = new Date(`2000-01-01T${endTime}`);
+            
+            if (end < start) {
+                end.setDate(end.getDate() + 1); // Next day
+            }
+            
+            return (end - start) / (1000 * 60 * 60); // Convert to hours
+        }
+
+        // Utility functions
+        function formatDate(dateString) {
+            // Parse the date string directly without timezone conversion
+            const [year, month, day] = dateString.split('-');
+            const date = new Date(year, month - 1, day);
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'concluido': return 'bg-green-100 text-green-800';
+                case 'em-andamento': return 'bg-blue-100 text-blue-800';
+                case 'pausado': return 'bg-yellow-100 text-yellow-800';
+                case 'cancelado': return 'bg-red-100 text-red-800';
+                case 'aguardando': return 'bg-orange-100 text-orange-800';
+                case 'manutencao': return 'bg-purple-100 text-purple-800';
+                case 'quebrado': return 'bg-red-200 text-red-900';
+                case 'abastecimento': return 'bg-cyan-100 text-cyan-800';
+                case 'troca-turno': return 'bg-indigo-100 text-indigo-800';
+                case 'almoco': return 'bg-amber-100 text-amber-800';
+                case 'chuva': return 'bg-slate-100 text-slate-800';
+                case 'falta-operador': return 'bg-pink-100 text-pink-800';
+                case 'falta-combustivel': return 'bg-rose-100 text-rose-800';
+                case 'aguardando-material': return 'bg-lime-100 text-lime-800';
+                case 'aguardando-liberacao': return 'bg-teal-100 text-teal-800';
+                case 'transporte': return 'bg-sky-100 text-sky-800';
+                case 'standby': return 'bg-neutral-100 text-neutral-800';
+                case 'inativo': return 'bg-gray-200 text-gray-700';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function viewReport(id) {
+            const report = reports.find(r => r.id === id);
+            if (!report) return;
+            
+            alert(`
+Relatório Detalhado:
+
+Data: ${formatDate(report.date)}
+Equipamento: ${report.equipment}
+Fazenda: ${report.farm}
+Lote: ${report.lot}
+Horário: ${report.startTime} - ${report.endTime}
+Horímetro: ${report.initialHourMeter} - ${report.finalHourMeter}
+Operador: ${report.operator}
+Horas Trabalhadas: ${report.workedHours.toFixed(1)}h
+Horas de Intervalo: ${(report.breakHours || 0).toFixed(1)}h
+Horas de Retorno: ${(report.returnHours || 0).toFixed(1)}h
+Combustível: ${report.fuel}L
+Tipo de Serviço: ${report.serviceType}
+Status: ${report.status}
+Observações: ${report.observations || 'Nenhuma'}
+            `);
+        }
+
+        function editReportStatus(id) {
+            const report = reports.find(r => r.id === id);
+            if (!report) return;
+            
+            const statusOptions = [
+                { value: 'concluido', text: 'Concluído' },
+                { value: 'em-andamento', text: 'Em Andamento' },
+                { value: 'pausado', text: 'Pausado' },
+                { value: 'cancelado', text: 'Cancelado' },
+                { value: 'aguardando', text: 'Aguardando Início' },
+                { value: 'manutencao', text: 'Em Manutenção' },
+                { value: 'quebrado', text: 'Quebrado/Avariado' },
+                { value: 'abastecimento', text: 'Abastecimento' },
+                { value: 'troca-turno', text: 'Troca de Turno' },
+                { value: 'almoco', text: 'Parada para Almoço' },
+                { value: 'chuva', text: 'Parado por Chuva' },
+                { value: 'falta-operador', text: 'Falta de Operador' },
+                { value: 'falta-combustivel', text: 'Falta de Combustível' },
+                { value: 'aguardando-material', text: 'Aguardando Material' },
+                { value: 'aguardando-liberacao', text: 'Aguardando Liberação' },
+                { value: 'transporte', text: 'Em Transporte' },
+                { value: 'standby', text: 'Stand-by' },
+                { value: 'inativo', text: 'Inativo' }
+            ];
+            
+            let optionsText = statusOptions.map((option, index) => 
+                `${index + 1}. ${option.text}`
+            ).join('\n');
+            
+            const choice = prompt(`Selecione o novo status para o relatório de ${report.equipment} - ${formatDate(report.date)}:\n\n${optionsText}\n\nDigite o número da opção:`);
+            
+            if (choice === null) return; // User cancelled
+            
+            const choiceIndex = parseInt(choice) - 1;
+            if (choiceIndex >= 0 && choiceIndex < statusOptions.length) {
+                report.status = statusOptions[choiceIndex].value;
+                report.updatedAt = new Date().toISOString();
+                
+                localStorage.setItem('reports', JSON.stringify(reports));
+                loadReports();
+                updateStatistics();
+                
+                alert(`Status atualizado para: ${statusOptions[choiceIndex].text}`);
+            } else {
+                alert('Opção inválida!');
+            }
+        }
+
+        function deleteReport(id) {
+            if (confirm('Tem certeza que deseja excluir este relatório?')) {
+                reports = reports.filter(r => r.id !== id);
+                localStorage.setItem('reports', JSON.stringify(reports));
+                loadReports();
+                updateStatistics();
+                populateFilters();
+            }
+        }
+
+        // Equipment management functions
+        function editEquipment(id) {
+            const equipment_item = equipment.find(eq => eq.id === id);
+            if (!equipment_item) return;
+            
+            const newNumber = prompt('Digite o novo número do equipamento:', equipment_item.number);
+            if (newNumber === null) return; // User cancelled
+            
+            if (newNumber.trim() === '') {
+                alert('O número do equipamento não pode estar vazio!');
+                return;
+            }
+            
+            // Check if new number already exists (excluding current equipment)
+            if (equipment.find(eq => eq.number === newNumber && eq.id !== id)) {
+                alert('Este número de equipamento já está sendo usado!');
+                return;
+            }
+            
+            // Update equipment
+            equipment_item.number = newNumber;
+            equipment_item.updatedAt = new Date().toISOString();
+            
+            // Update reports that use this equipment
+            reports.forEach(report => {
+                if (report.equipment === equipment_item.number) {
+                    // Equipment number was already updated, so this won't match
+                    // We need to find reports with the old number
+                }
+            });
+            
+            // Save to localStorage
+            localStorage.setItem('equipment', JSON.stringify(equipment));
+            
+            // Update displays
+            updateEquipmentSelects();
+            displayActiveEquipment();
+            populateExportFilters();
+            
+            alert('Equipamento atualizado com sucesso!');
+        }
+
+        function deleteEquipment(id) {
+            const equipment_item = equipment.find(eq => eq.id === id);
+            if (!equipment_item) return;
+            
+            // Check if equipment is being used in reports
+            const reportsUsingEquipment = reports.filter(r => r.equipment === equipment_item.number);
+            
+            if (reportsUsingEquipment.length > 0) {
+                const confirmMessage = `Este equipamento possui ${reportsUsingEquipment.length} relatório(s) associado(s). Tem certeza que deseja excluí-lo? Os relatórios serão mantidos, mas ficarão com referência ao equipamento excluído.`;
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+            } else {
+                if (!confirm(`Tem certeza que deseja excluir o equipamento ${equipment_item.number}?`)) {
+                    return;
+                }
+            }
+            
+            // Remove equipment from array
+            equipment = equipment.filter(eq => eq.id !== id);
+            
+            // Save to localStorage
+            localStorage.setItem('equipment', JSON.stringify(equipment));
+            
+            // Update displays
+            updateEquipmentSelects();
+            displayActiveEquipment();
+            populateExportFilters();
+            updateStatistics();
+            
+            alert('Equipamento excluído com sucesso!');
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'970156077004af11',t:'MTc1NTM1MTU0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
